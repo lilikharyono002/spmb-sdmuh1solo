@@ -5,7 +5,7 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hasil Observasi Peserta Didik</title>
-  <style>
+<style>
     * { box-sizing: border-box; }
     body {
       margin: 0; padding: 0;
@@ -27,16 +27,83 @@
     .toggle-password { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #2563eb; cursor: pointer; font-size: 13px; font-weight: bold; }
     .btn-login { width: 100%; border: none; padding: 14px; border-radius: 10px; background: #2563eb; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 8px; }
     .btn-login:hover { background: #1d4ed8; }
+    .btn-login:disabled { background: #93c5fd; cursor: not-allowed; }
     .pesan { display: none; margin-top: 18px; padding: 12px; border-radius: 9px; font-size: 14px; line-height: 1.5; }
     .pesan.error { display: block; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     .pesan.success { display: block; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
     .loading { display: none; text-align: center; margin-top: 15px; color: #2563eb; font-size: 14px; }
     .footer { text-align: center; margin-top: 25px; font-size: 12px; color: #9ca3af; }
+
+    #dashboard { display: none; width: 100%; min-height: 100vh; }
+    .dashboard-header { background: #1d4ed8; color: white; padding: 20px; }
+    .dashboard-header-inner { max-width: 1100px; margin: auto; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+    .dashboard-title { font-size: 20px; font-weight: bold; }
+    .dashboard-user { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+    .btn-logout { border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); color: white; padding: 9px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .dashboard-content { max-width: 1100px; margin: auto; padding: 25px 20px; }
+    .welcome-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.07); margin-bottom: 20px; }
+    .welcome-card h2 { margin-top: 0; color: #1e3a8a; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
+    .info-box { background: #f8fafc; border-radius: 12px; padding: 18px; border: 1px solid #e5e7eb; }
+    .info-label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+    .info-value { font-size: 17px; font-weight: bold; color: #1f2937; }
+
+    @media (max-width: 600px) {
+      .login-card { padding: 28px 20px; }
+      .dashboard-header-inner { flex-direction: column; align-items: flex-start; }
+      .btn-logout { width: 100%; }
+    }
+
+    .icon { margin-bottom: 15px; text-align: center; }
     .icon img { width: 70px; height: auto; display: block; margin: 0 auto; object-fit: contain; }
+
+    #dashboardAdmin { width: 100%; min-height: 100vh; background: #f1f5f9; }
+    .admin-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 25px 20px 40px; }
+    .admin-header { background: #1d4ed8; color: white; border-radius: 16px; padding: 22px 25px; display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+    .admin-header h2 { margin: 0; font-size: 22px; }
+    .admin-header p { margin: 5px 0 0; font-size: 14px; opacity: 0.9; }
+
+    .statistik-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .stat-card { background: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; }
+    .stat-icon { font-size: 30px; margin-bottom: 8px; }
+    .stat-label { font-size: 13px; color: #6b7280; margin-bottom: 5px; }
+    .stat-number { font-size: 28px; font-weight: bold; color: #1e3a8a; }
+
+    .menu-admin { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; }
+    .menu-admin button { border: none; background: white; padding: 18px; border-radius: 13px; font-family: inherit; font-size: 15px; font-weight: 600; color: #1f2937; cursor: pointer; text-align: left; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.2s; }
+    .menu-admin button:hover { transform: translateY(-2px); box-shadow: 0 7px 18px rgba(0,0,0,0.08); border-color: #93c5fd; }
+
+    @media (max-width: 800px) { .statistik-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) {
+      .admin-container { padding: 15px; }
+      .admin-header { flex-direction: column; align-items: flex-start; }
+      .admin-header .btn-logout { width: 100%; }
+      .statistik-grid { grid-template-columns: 1fr; }
+      .menu-admin { grid-template-columns: 1fr; }
+    }
+
+    .status-sudah { display: inline-block; padding: 5px 9px; border-radius: 7px; background: #dcfce7; color: #166534; font-size: 12px; font-weight: bold; }
+    .status-belum { display: inline-block; padding: 5px 9px; border-radius: 7px; background: #fef3c7; color: #92400e; font-size: 12px; font-weight: bold; }
+    .status-ditolak { display: inline-block; padding: 5px 9px; border-radius: 7px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: bold; }
+    .status-info { display: inline-block; padding: 5px 9px; border-radius: 7px; background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: bold; }
+    .status-netral { display: inline-block; padding: 5px 9px; border-radius: 7px; background: #e2e8f0; color: #475569; font-size: 12px; font-weight: bold; }
+
+    .ruang-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+    .ruang-kartu { border: 2px solid #bfdbfe; background: white; border-radius: 16px; padding: 22px 18px; text-align: left; font-family: inherit; cursor: pointer; transition: 0.15s; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    .ruang-kartu:hover:not(:disabled) { border-color: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,99,235,0.15); }
+    .ruang-nama { font-size: 22px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px; }
+    .ruang-info { font-size: 13px; color: #475569; line-height: 1.6; }
+
+    .tabel-hasil-wrap { overflow: auto; max-height: 70vh; border: 1px solid #e5e7eb; border-radius: 10px; }
+    .tabel-hasil { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 820px; font-variant-numeric: tabular-nums; }
+    .tabel-hasil th { position: sticky; top: 0; z-index: 1; background: #eff6ff; color: #1e3a8a; padding: 12px; text-align: left; white-space: nowrap; box-shadow: 0 1px 0 #dbeafe; }
+    .tabel-hasil td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .tabel-hasil tbody tr:hover { background: #f8fafc; }
   </style>
 </head>
 <body>
 
+  <!-- HALAMAN LOGIN -->
   <div class="container" id="halamanLogin">
     <div class="login-card">
       <div class="icon">
@@ -66,9 +133,149 @@
     </div>
   </div>
 
+  <!-- DASHBOARD ADMIN -->
+  <div id="dashboardAdmin" style="display:none;">
+    <div class="admin-container">
+      <div class="admin-header">
+        <div>
+          <h2>📊 Dashboard Admin</h2>
+          <p id="namaAdminDashboard">Selamat datang</p>
+        </div>
+        <button type="button" onclick="logout()" class="btn-logout">Keluar</button>
+      </div>
+      <div class="statistik-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👨‍🎓</div>
+          <div class="stat-label">Total Calon</div>
+          <div id="statTotalCalon" class="stat-number">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🪪</div>
+          <div class="stat-label">Sudah Memiliki Akun</div>
+          <div id="statSudahBerakun" class="stat-number">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-label">Sudah Check-in</div>
+          <div id="statSudahCheckin" class="stat-number">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📝</div>
+          <div class="stat-label">Sudah Observasi</div>
+          <div id="statSudahObservasi" class="stat-number">0</div>
+        </div>
+      </div>
+      <div class="menu-admin">
+        <button type="button" onclick="generateAkunDariDashboard()">🪪 Generate Akun</button>
+        <button type="button" onclick="bukaDataCalon()">👨‍🎓 Data Calon</button>
+        <button type="button" onclick="bukaHalamanCheckIn()">📋 Data Check-in</button>
+        <button type="button" onclick="bukaHalamanObservasi()">📝 Data Observasi</button>
+        <button type="button" onclick="bukaHalamanHasilAdmin()">📊 Hasil Observasi</button>
+        <button type="button" onclick="bukaHalamanPengaturan()">⚙️ Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD OBSERVER -->
+  <div id="dashboard" style="display:none; min-height:100vh; background:#f1f5f9;">
+    <div class="admin-container">
+      <div class="admin-header">
+        <div>
+          <h2>🧑‍🏫 Dashboard Observer</h2>
+          <p id="namaObserver">Selamat datang</p>
+          <p id="infoRuangObserver" style="font-weight:700;"></p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" id="btnKembaliObserver" class="btn-logout" style="display:none;" onclick="kembaliObserver()">← Kembali</button>
+          <button type="button" class="btn-logout" onclick="logout()">Keluar</button>
+        </div>
+      </div>
+      <div id="pesanObserver" style="display:none; margin-bottom:18px; padding:14px 16px; border-radius:12px; font-size:15px;"></div>
+      <div id="tampilanRuangObserver">
+        <div class="welcome-card">
+          <h3 style="margin:0 0 6px; color:#1e3a8a;">Pilih Ruang Observasi</h3>
+          <div id="isiRuangObserver" class="ruang-grid">
+            <div style="grid-column:1/-1; text-align:center; padding:20px; color:#2563eb;">⏳ Memuat data ruang...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD CALON -->
+  <div id="dashboardCalon" style="display:none;">
+    <div class="dashboard-content">
+      <div id="headerCalonDashboard" class="welcome-card" style="text-align:center;">
+        <h2>📋 HASIL OBSERVASI PESERTA DIDIK</h2>
+        <p style="font-size:16px; color:#475569; margin-top:8px;">Selamat datang, <strong id="namaCalonDashboard"></strong></p>
+      </div>
+      <div id="menuCalonDashboard" class="welcome-card" style="text-align:center;">
+        <h3 style="margin-top:0; color:#1e3a8a;">Silakan pilih menu</h3>
+        <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-top:20px;">
+          <button type="button" onclick="logout()" style="border:none; background:#dc2626; color:#ffffff; padding:11px 28px; border-radius:9px; cursor:pointer; font-weight:700;">Keluar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // URL Web App Google Apps Script Anda (Ganti dengan URL /exec Anda setelah di-deploy sebagai Web App)
-    const URL_BACKEND_GAS = 'https://script.google.com/macros/s/AKfycbyLFGUOvW2aaWgSgt9ihnHqG0gG5bD0cF1mtWSKqlmEkwOgbWfAmA2tI7HlJMuP7yIpzg/exec';
+    // URL Web App Google Apps Script Backend Anda
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLFGUOvW2aaWgSgt9ihnHqG0gG5bD0cF1mtWSKqlmEkwOgbWfAmA2tI7HlJMuP7yIpzg/exec';
+
+    // Jembatan (Bridge) Pengganti google.script.run untuk GitHub Pages
+    const google = {
+      script: {
+        run: {
+          withSuccessHandler: function(successCallback) {
+            const self = this;
+            self._success = successCallback;
+            return self;
+          },
+          withFailureHandler: function(failureCallback) {
+            const self = this;
+            self._failure = failureCallback;
+            return self;
+          },
+          _callGet: function(action, params = {}) {
+            const self = this;
+            const query = new URLSearchParams({ action, ...params }).toString();
+            fetch(`${GAS_URL}?${query}`)
+              .then(res => res.json())
+              .then(data => { if (self._success) self._success(data); })
+              .catch(err => { if (self._failure) self._failure(err); });
+          },
+          _callPost: function(action, data = {}) {
+            const self = this;
+            fetch(GAS_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action, data })
+            })
+              .then(res => res.json())
+              .then(data => { if (self._success) self._success(data); })
+              .catch(err => { if (self._failure) self._failure(err); });
+          },
+
+          loginUser: function(username, password) { this._callGet('login', { username, password }); },
+          getStatistikAdmin: function() { this._callGet('getStatistikAdmin'); },
+          getDataCalonAdmin: function() { this._callGet('getDataCalonAdmin'); },
+          getKartuAkunAdmin: function(idCalon) { this._callGet('getKartuAkunAdmin', { idCalon }); },
+          cekStatusPengumuman: function() { this._callGet('cekStatusPengumuman'); },
+          getHasilObservasiCalon: function(idCalon) { this._callGet('getHasilObservasiCalon', { idCalon }); },
+          getDataDashboardCalon: function(idCalon) { this._callGet('getDataDashboardCalon', { idCalon }); },
+          getDaftarCalonCheckIn: function() { this._callGet('getDaftarCheckIn'); },
+          getDataCheckInAdmin: function() { this._callGet('getDataCheckInAdmin'); },
+          getDataObservasiAdmin: function() { this._callGet('getDataObservasiAdmin'); },
+          getPengaturanAdmin: function() { this._callGet('getPengaturanAdmin'); },
+          getDaftarObserver: function(idGuru) { this._callGet('getDaftarObserver', { idGuru }); },
+          getHasilObservasiAdmin: function(idPetugas) { this._callGet('getHasilObservasiAdmin', { idPetugas }); },
+          
+          simpanCheckIn: function(data) { this._callPost('simpanCheckIn', data); },
+          simpanObservasi: function(data) { this._callPost('simpanObservasi', data); },
+          simpanPengaturan: function(data) { this._callPost('simpanPengaturan', data); },
+          generateAkunPeserta: function() { this._callPost('generateAkunPeserta'); }
+        }
+      }
+    };
 
     function togglePassword() {
       const password = document.getElementById('password');
@@ -89,6 +296,8 @@
       el.style.display = 'block';
     }
 
+    window.userLogin = null;
+
     function prosesLogin(event) {
       event.preventDefault();
       const username = document.getElementById('username').value.trim();
@@ -107,28 +316,64 @@
       loading.style.display = 'block';
       pesan.style.display = 'none';
 
-      // Menggunakan fetch untuk menghubungi Apps Script Backend via POST/GET
-      fetch(URL_BACKEND_GAS + '?action=login&username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password))
-        .then(response => response.json())
-        .then(result => {
+      google.script.run
+        .withSuccessHandler(function(result) {
           btn.disabled = false;
           btn.textContent = 'LOGIN';
           loading.style.display = 'none';
 
           if (result && result.success) {
-            tampilkanPesan('Login Berhasil! Selamat datang, ' + result.nama, 'success');
-            // Lanjutkan logika dashboard Anda di sini
+            window.userLogin = result;
+            tampilkanDashboard(result);
           } else {
             tampilkanPesan(result && result.message ? result.message : 'Login gagal.', 'error');
           }
         })
-        .catch(error => {
+        .withFailureHandler(function(error) {
           btn.disabled = false;
           btn.textContent = 'LOGIN';
           loading.style.display = 'none';
           console.error(error);
           tampilkanPesan('Terjadi kesalahan saat menghubungi server.', 'error');
-        });
+        })
+        .loginUser(username, password);
+    }
+
+    function tampilkanDashboard(user) {
+      document.getElementById('halamanLogin').style.display = 'none';
+      if (user.role === 'guru' && String(user.level || '').toUpperCase() === 'ADMIN') {
+        document.getElementById('dashboardAdmin').style.display = 'block';
+        document.getElementById('namaAdminDashboard').textContent = 'Selamat datang, ' + (user.nama || 'Admin');
+        if (typeof muatStatistikAdmin === 'function') muatStatistikAdmin();
+      } else if (user.role === 'calon') {
+        document.getElementById('dashboardCalon').style.display = 'block';
+        document.getElementById('namaCalonDashboard').textContent = user.nama || '';
+      } else {
+        document.getElementById('dashboard').style.display = 'block';
+        if (typeof mulaiDashboardObserver === 'function') mulaiDashboardObserver();
+      }
+    }
+
+    function logout() {
+      window.userLogin = null;
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('dashboardAdmin').style.display = 'none';
+      document.getElementById('dashboardCalon').style.display = 'none';
+      document.getElementById('halamanLogin').style.display = 'flex';
+      document.getElementById('formLogin').reset();
+      document.getElementById('pesanLogin').style.display = 'none';
+    }
+
+    function muatStatistikAdmin() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (!data || !data.success) return;
+          document.getElementById('statTotalCalon').textContent = data.totalCalon;
+          document.getElementById('statSudahBerakun').textContent = data.sudahBerakun;
+          document.getElementById('statSudahCheckin').textContent = data.sudahCheckin;
+          document.getElementById('statSudahObservasi').textContent = data.sudahObservasi;
+        })
+        .getStatistikAdmin();
     }
   </script>
 </body>
