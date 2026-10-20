@@ -103,35 +103,126 @@
 </head>
 <body>
 
-  <!-- HALAMAN LOGIN -->
+  <!-- =====================================
+       HALAMAN LOGIN
+       ===================================== -->
+
   <div class="container" id="halamanLogin">
+
+    <div class="login-shell" id="loginShell">
+
+    <!-- GAMBAR (KIRI) -->
+    <div class="login-visual">
+      <img
+        src="https://drive.google.com/thumbnail?id=16uyi94Q6jh-LmN03EavjlL6a6zDw1-j1&sz=w1200"
+        alt="SPMB SD Muhammadiyah 1 Ketelan Surakarta"
+        onerror="document.getElementById('loginShell').classList.add('tanpa-gambar')"
+      >
+    </div>
+
+    <!-- FORM LOGIN (KANAN) -->
     <div class="login-card">
+
       <div class="icon">
-        <img src="https://drive.google.com/thumbnail?id=1d9AlAABndWNgl_wzYEaONSXIbFcSUaKy&sz=w300" alt="Logo Sekolah">
+        <img
+          src="https://drive.google.com/thumbnail?id=1d9AlAABndWNgl_wzYEaONSXIbFcSUaKy&sz=w300"
+          alt="Logo Sekolah"
+        >
       </div>
-      <div class="title">Portal Hasil Observasi SPMB</div>
-      <div class="subtitle">SD Muhammadiyah 1 Ketelan Surakarta</div>
+
+      <div class="title">
+        Portal Hasil Observasi SPMB
+      </div>
+
+      <div class="subtitle">
+        SD Muhammadiyah 1 Ketelan Surakarta
+      </div>
+
 
       <form id="formLogin" onsubmit="prosesLogin(event)">
+
         <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" placeholder="Masukkan username" autocomplete="username" required>
+
+          <label for="username">
+            Username
+          </label>
+
+          <input
+            type="text"
+            id="username"
+            placeholder="Masukkan username"
+            autocomplete="username"
+            required
+          >
+
         </div>
+
+
         <div class="form-group">
-          <label for="password">Password</label>
+
+          <label for="password">
+            Password
+          </label>
+
           <div class="password-wrapper">
-            <input type="password" id="password" placeholder="Masukkan password" autocomplete="current-password" required>
-            <button type="button" class="toggle-password" onclick="togglePassword()">Lihat</button>
+
+            <input
+              type="password"
+              id="password"
+              placeholder="Masukkan password"
+              autocomplete="current-password"
+              required
+            >
+
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePassword()"
+            >
+              Lihat
+            </button>
+
           </div>
+
         </div>
-        <button type="submit" class="btn-login" id="btnLogin">LOGIN</button>
+
+
+        <button
+          type="submit"
+          class="btn-login"
+          id="btnLogin"
+        >
+          LOGIN
+        </button>
+
       </form>
 
-      <div id="loadingLogin" class="loading">⏳ Sedang memeriksa akun...</div>
-      <div id="pesanLogin" class="pesan"></div>
-      <div class="footer">Sistem Informasi Observasi Peserta Didik</div>
+
+      <div
+        id="loadingLogin"
+        class="loading"
+      >
+        ⏳ Sedang memeriksa akun...
+      </div>
+
+
+      <div
+        id="pesanLogin"
+        class="pesan"
+      ></div>
+
+
+      <div class="footer">
+        Sistem Informasi Observasi Peserta Didik
+      </div>
+
     </div>
+
+    </div>
+
   </div>
+
+
 
   <!-- DASHBOARD ADMIN -->
   <div id="dashboardAdmin" style="display:none;">
