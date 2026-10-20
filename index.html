@@ -99,6 +99,51 @@
     .tabel-hasil th { position: sticky; top: 0; z-index: 1; background: #eff6ff; color: #1e3a8a; padding: 12px; text-align: left; white-space: nowrap; box-shadow: 0 1px 0 #dbeafe; }
     .tabel-hasil td { padding: 11px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
     .tabel-hasil tbody tr:hover { background: #f8fafc; }
+
+/* LOGIN DUA KOLOM */
+.login-shell {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.10);
+}
+
+.login-visual {
+  flex: 1 1 50%;
+  min-height: 420px;
+  background: #eaf4ff;
+}
+
+.login-visual img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.login-shell .login-card {
+  flex: 1 1 50%;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Jika gambar gagal dimuat: kembali ke kartu tunggal */
+.login-shell.tanpa-gambar { max-width: 420px; }
+.login-shell.tanpa-gambar .login-visual { display: none; }
+
+@media (max-width: 700px) {
+  .login-shell { flex-direction: column; max-width: 420px; }
+  .login-visual { flex: none; min-height: 0; height: 180px; }
+  .login-shell .login-card { padding: 28px 20px; }
+}
+  
   </style>
 </head>
 <body>
