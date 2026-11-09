@@ -5810,6 +5810,19 @@ function kembaliDetailCalon() {
             Batal
           </button>
 
+          <button
+            type="button"
+            id="btnCetakKwitansiBayar"
+            onclick="cetakKwitansiBayar()"
+            style="padding:13px 20px; border:none; border-radius:10px; background:#2563eb; color:white; font-weight:bold; font-size:15px; cursor:pointer;"
+          >
+            🧾 Cetak Kwitansi
+          </button>
+
+        </div>
+
+        <div style="margin-top:8px; font-size:12px; color:#64748b;">
+          Tombol Cetak Kwitansi mencetak pembayaran terakhir yang berhasil disimpan.
         </div>
 
         <div
@@ -9508,6 +9521,7 @@ window.bendaharaState = {
   biaya: 0,
   data: [],
   petaOpsi: {},     // teks pilihan -> idCalon
+  terakhir: null,   // pembayaran terakhir yang disimpan (untuk kwitansi)
   terpilih: null,   // objek calon yang dipilih di form
   memuat: false,
   menyimpan: false
@@ -9577,6 +9591,7 @@ function resetDashboardBendahara() {
   st.data = [];
   st.petaOpsi = {};
   st.terpilih = null;
+  st.terakhir = null;
   st.memuat = false;
   st.menyimpan = false;
 
@@ -9902,6 +9917,16 @@ function simpanBayar(event) {
         return;
       }
 
+      // Simpan data pembayaran ini untuk dicetak sebagai kwitansi
+      st.terakhir = {
+        idCalon: c.idCalon,
+        nomor: c.no,
+        nama: c.nama,
+        ayah: c.namaAyah || '',
+        jumlah: jumlah,
+        tanggal: tanggal
+      };
+
       // Kosongkan form, lalu muat ulang data; pesan sukses tetap tampil
       batalFormBayar();
       document.getElementById('inputCalonBayar').focus();
@@ -10011,6 +10036,349 @@ function tampilkanTabelBayar(daftar) {
       '</td>' +
     '</tr>';
   }).join('');
+}
+
+
+/* ---------- KWITANSI SUMBANGAN PENGEMBANGAN ---------- */
+
+/* 14450000 -> "Empat Belas Juta Empat Ratus Lima Puluh Ribu Rupiah" */
+function terbilangRupiah(angka) {
+  let n = Math.floor(Number(angka) || 0);
+
+  if (n <= 0) return 'Nol Rupiah';
+
+  const satuan = [
+    '', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima',
+    'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'
+  ];
+
+  // 1 - 999
+  function tigaDigit(x) {
+    const ratus = Math.floor(x / 100);
+    const sisa = x % 100;
+    const hasil = [];
+
+    if (ratus === 1) hasil.push('Seratus');
+    else if (ratus > 1) hasil.push(satuan[ratus] + ' Ratus');
+
+    if (sisa > 0 && sisa < 12) {
+      hasil.push(satuan[sisa]);
+    } else if (sisa >= 12 && sisa < 20) {
+      hasil.push(satuan[sisa - 10] + ' Belas');
+    } else if (sisa >= 20) {
+      hasil.push(satuan[Math.floor(sisa / 10)] + ' Puluh');
+      if (sisa % 10) hasil.push(satuan[sisa % 10]);
+    }
+
+    return hasil.join(' ');
+  }
+
+  const skala = [
+    [1e12, 'Triliun'],
+    [1e9, 'Miliar'],
+    [1e6, 'Juta'],
+    [1e3, 'Ribu']
+  ];
+
+  const bagian = [];
+
+  skala.forEach(function(item) {
+    const q = Math.floor(n / item[0]);
+
+    if (q > 0) {
+      bagian.push(
+        item[0] === 1e3 && q === 1
+          ? 'Seribu'
+          : tigaDigit(q) + ' ' + item[1]
+      );
+      n = n % item[0];
+    }
+  });
+
+  if (n > 0) bagian.push(tigaDigit(n));
+
+  return bagian.join(' ') + ' Rupiah';
+}
+
+
+/* Mencetak kwitansi untuk pembayaran terakhir yang berhasil disimpan */
+function cetakKwitansiBayar() {
+  const st = window.bendaharaState;
+  const data = st.terakhir;
+
+  if (!data) {
+    tampilkanKotakPesan(
+      'pesanFormBayar',
+      'Belum ada pembayaran yang bisa dicetak. ' +
+        'Simpan pembayaran terlebih dahulu, lalu klik Cetak Kwitansi.',
+      'error'
+    );
+    return;
+  }
+
+  const tombol = document.getElementById('btnCetakKwitansiBayar');
+
+  if (tombol) {
+    tombol.disabled = true;
+    tombol.textContent = '⏳ Menyiapkan kwitansi...';
+  }
+
+  function pulihkan() {
+    if (tombol) {
+      tombol.disabled = false;
+      tombol.textContent = '🧾 Cetak Kwitansi';
+    }
+  }
+
+  // Jendela dibuka dalam klik pengguna agar tidak diblokir popup
+  const jendela = window.open('', '_blank', 'width=900,height=700');
+
+  if (!jendela) {
+    alert(
+      'Popup diblokir browser. ' +
+      'Silakan izinkan popup untuk aplikasi ini.'
+    );
+    pulihkan();
+    return;
+  }
+
+  muatAsetCetak(function(aset) {
+
+    const namaBulan = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(data.tanggal || ''));
+    const tanggalTampil = m
+      ? Number(m[3]) + ' ' + namaBulan[Number(m[2]) - 1] + ' ' + m[1]
+      : '';
+
+    function tagLogo(logo, alt) {
+      if (!logo || !logo.data) return '';
+      return '<img src="data:' + logo.mimeType + ';base64,' +
+             logo.data + '" alt="' + alt + '">';
+    }
+
+    jendela.document.open();
+
+    jendela.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kwitansi Sumbangan Pengembangan</title>
+<style>
+  @page { size: A4; margin: 8mm 15mm; }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #000;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+  }
+
+  .kwitansi {
+    width: 180mm;
+    margin: 0 auto 3mm;
+    padding: 3.5mm 6mm 3mm;
+    border: 4px double #000;
+    outline: 1px solid #000;
+    outline-offset: 1.5mm;
+  }
+
+  .kop {
+    display: grid;
+    grid-template-columns: 20mm 1fr 20mm;
+    align-items: center;
+    column-gap: 4mm;
+  }
+
+  .logo {
+    width: 18mm;
+    height: 18mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo img {
+    max-width: 18mm;
+    max-height: 18mm;
+    object-fit: contain;
+  }
+
+  .judul {
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .judul .b1 { font-size: 12pt; font-weight: bold; }
+  .judul .b2 { font-size: 12pt; font-weight: bold; }
+  .judul .b3 { font-size: 10.5pt; }
+
+  hr {
+    border: 0;
+    border-top: 2px solid #000;
+    margin: 3mm 0 3mm;
+  }
+
+  .terima {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1mm;
+  }
+
+  table.isi {
+    border-collapse: collapse;
+    width: 100%;
+    text-align: left;
+  }
+
+  table.isi td {
+    padding: 1mm 0;
+    vertical-align: top;
+  }
+
+  table.isi td.label { width: 46mm; }
+  table.isi td.titik { width: 5mm; }
+
+  .miring { font-style: italic; }
+
+  .tanggal {
+    margin-top: 2mm;
+    text-align: right;
+  }
+
+  .ttd {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin-top: 1mm;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .ttd .ruang { height: 12mm; }
+
+  .tombol {
+    text-align: center;
+    margin: 20px;
+  }
+
+  .tombol button {
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  @media print {
+    .tombol { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="kwitansi">
+
+  <div class="kop">
+
+    <div class="logo">${tagLogo(aset.logoKiri, 'Logo Kiri')}</div>
+
+    <div class="judul">
+      <div class="b1">Kwitansi Pembayaran SPMB</div>
+      <div class="b2">SD Muhammadiyah 1 Ketelan Surakarta</div>
+      <div class="b3">Tahun Pelajaran 2028/2029</div>
+    </div>
+
+    <div class="logo">${tagLogo(aset.logoKanan, 'Logo Kanan')}</div>
+
+  </div>
+
+  <hr>
+
+  <div class="terima">
+    <span>Telah terima dari :</span>
+    <span>Nomor Pendaftaran : ${escapeHtml(data.nomor || '')}</span>
+  </div>
+
+  <table class="isi">
+    <tr>
+      <td class="label">Nama Calon Siswa</td>
+      <td class="titik">:</td>
+      <td>${escapeHtml(data.nama || '')}</td>
+    </tr>
+    <tr>
+      <td class="label">Nama Orang Tua/Wali</td>
+      <td class="titik">:</td>
+      <td>${escapeHtml(data.ayah || '')}</td>
+    </tr>
+    <tr>
+      <td class="label">Uang Sebanyak</td>
+      <td class="titik">:</td>
+      <td class="miring">${escapeHtml(terbilangRupiah(data.jumlah))}</td>
+    </tr>
+    <tr>
+      <td class="label">Untuk Keperluan</td>
+      <td class="titik">:</td>
+      <td>Sumbangan Pengembangan</td>
+    </tr>
+  </table>
+
+  <div class="tanggal">Surakarta, ${escapeHtml(tanggalTampil)}</div>
+
+  <div class="ttd">
+    <div>
+      <div>Kepala Sekolah</div>
+      <div class="ruang"></div>
+      <div>...............................</div>
+    </div>
+    <div>
+      <div>Orang Tua/Wali</div>
+      <div class="ruang"></div>
+      <div>...............................</div>
+    </div>
+    <div>
+      <div>Bendahara</div>
+      <div class="ruang"></div>
+      <div>...............................</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tombol">
+  <button onclick="window.print()">🖨️ Cetak</button>
+</div>
+
+<script>
+  window.onload = function () {
+    setTimeout(function () { window.focus(); window.print(); }, 300);
+  };
+<\/script>
+
+</body>
+</html>
+    `);
+
+    jendela.document.close();
+
+    pulihkan();
+
+  }, function(error) {
+
+    console.error('Gagal memuat logo kwitansi:', error);
+
+    jendela.close();
+
+    alert('Logo tidak dapat dimuat. Periksa koneksi lalu coba lagi.');
+
+    pulihkan();
+  });
 }
 
 
