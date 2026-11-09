@@ -5738,6 +5738,8 @@ function kembaliDetailCalon() {
 
       <form id="formBayar" class="form-bayar" onsubmit="simpanBayar(event)" novalidate>
 
+        <fieldset id="fieldsetBayar" style="border:0; padding:0; margin:0; min-width:0;">
+
         <div class="form-group">
           <label for="inputCalonBayar">Calon Siswa</label>
           <input
@@ -5757,13 +5759,14 @@ function kembaliDetailCalon() {
           <label for="inputJumlahBayar">Jumlah Pembayaran (Rp)</label>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <input
-              type="number"
+              type="text"
               id="inputJumlahBayar"
               inputmode="numeric"
-              min="1"
-              step="1"
-              placeholder="Contoh: 500000"
-              style="flex:1; min-width:180px;"
+              autocomplete="off"
+              maxlength="17"
+              placeholder="Contoh: 500.000"
+              oninput="formatInputJumlahBayar(this)"
+              style="flex:1; min-width:180px; font-size:18px; font-weight:600; letter-spacing:0.5px;"
             >
             <button
               type="button"
@@ -5774,6 +5777,10 @@ function kembaliDetailCalon() {
               Isi sisa tagihan
             </button>
           </div>
+          <div
+            id="terbilangBayar"
+            style="margin-top:6px; min-height:18px; font-size:13px; color:#475569; font-style:italic;"
+          ></div>
         </div>
 
         <div class="form-group">
@@ -5792,6 +5799,8 @@ function kembaliDetailCalon() {
           >
         </div>
 
+        </fieldset>
+
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
 
           <button
@@ -5804,6 +5813,7 @@ function kembaliDetailCalon() {
 
           <button
             type="button"
+            id="btnBatalBayar"
             onclick="batalFormBayar()"
             style="padding:13px 20px; border:none; border-radius:10px; background:#e5e7eb; color:#1f2937; font-weight:bold; font-size:15px; cursor:pointer;"
           >
@@ -5814,15 +5824,11 @@ function kembaliDetailCalon() {
             type="button"
             id="btnCetakKwitansiBayar"
             onclick="cetakKwitansiBayar()"
-            style="padding:13px 20px; border:none; border-radius:10px; background:#2563eb; color:white; font-weight:bold; font-size:15px; cursor:pointer;"
+            style="display:none; padding:13px 20px; border:none; border-radius:10px; background:#2563eb; color:white; font-weight:bold; font-size:15px; cursor:pointer;"
           >
             🧾 Cetak Kwitansi
           </button>
 
-        </div>
-
-        <div style="margin-top:8px; font-size:12px; color:#64748b;">
-          Tombol Cetak Kwitansi mencetak pembayaran terakhir yang berhasil disimpan.
         </div>
 
         <div
@@ -9800,10 +9806,76 @@ function tampilkanInfoTagihanBayar() {
 }
 
 
+/* "5000000" -> "5.000.000" */
+function pisahRibuan(angka) {
+  return String(angka).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+
+/* Isi kolom jumlah: hanya angka, otomatis dipisah tiap 3 digit */
+function formatInputJumlahBayar(el) {
+  const posisi = el.selectionStart;
+  const sebelum = el.value.slice(0, posisi).replace(/\D/g, '').length;
+
+  const digit = el.value.replace(/\D/g, '').replace(/^0+/, '');
+  el.value = pisahRibuan(digit);
+
+  // Kembalikan kursor ke posisi digit yang sama
+  let hitung = 0;
+  let baru = el.value.length;
+
+  for (let i = 0; i < el.value.length; i++) {
+    if (hitung === sebelum) { baru = i; break; }
+    if (/\d/.test(el.value[i])) hitung++;
+  }
+
+  try { el.setSelectionRange(baru, baru); } catch (e) {}
+
+  perbaruiTerbilangBayar();
+}
+
+
+/* Nilai angka dari kolom jumlah ("1.500.000" -> 1500000) */
+function angkaJumlahBayar() {
+  const el = document.getElementById('inputJumlahBayar');
+  const digit = el ? el.value.replace(/\D/g, '') : '';
+  return digit === '' ? 0 : Number(digit);
+}
+
+
+/* Penegasan nominal dalam huruf di bawah kolom jumlah */
+function perbaruiTerbilangBayar() {
+  const el = document.getElementById('terbilangBayar');
+  if (!el) return;
+
+  const jumlah = angkaJumlahBayar();
+  el.textContent = jumlah > 0 ? terbilangRupiah(jumlah) : '';
+}
+
+
 function isiSisaBayar() {
   const c = window.bendaharaState.terpilih;
   const el = document.getElementById('inputJumlahBayar');
-  if (c && el) el.value = c.sisa;
+
+  if (c && el) {
+    el.value = pisahRibuan(c.sisa);
+    perbaruiTerbilangBayar();
+  }
+}
+
+
+/* Tombol: sebelum simpan = Simpan + Batal; sesudah simpan =
+   Cetak Kwitansi + Input Baru, dan isian dikunci. */
+function aturTampilanSetelahSimpan(sudahSimpan) {
+  const fs = document.getElementById('fieldsetBayar');
+  const simpan = document.getElementById('btnSimpanBayar');
+  const cetak = document.getElementById('btnCetakKwitansiBayar');
+  const batal = document.getElementById('btnBatalBayar');
+
+  if (fs) fs.disabled = !!sudahSimpan;
+  if (simpan) simpan.style.display = sudahSimpan ? 'none' : '';
+  if (cetak) cetak.style.display = sudahSimpan ? '' : 'none';
+  if (batal) batal.textContent = sudahSimpan ? '＋ Input Baru' : 'Batal';
 }
 
 
@@ -9814,8 +9886,11 @@ function batalFormBayar() {
   if (form) form.reset();
 
   st.terpilih = null;
+  st.terakhir = null;
   tampilkanInfoTagihanBayar();
   tampilkanKotakPesan('pesanFormBayar', '', '');
+  aturTampilanSetelahSimpan(false);
+  perbaruiTerbilangBayar();
 
   const tgl = document.getElementById('inputTanggalBayar');
   if (tgl) tgl.value = hariIniISO();
@@ -9849,7 +9924,7 @@ function simpanBayar(event) {
     return;
   }
 
-  const jumlah = Number(document.getElementById('inputJumlahBayar').value);
+  const jumlah = angkaJumlahBayar();
   const tanggal = document.getElementById('inputTanggalBayar').value;
   const keterangan = document.getElementById('inputKeteranganBayar').value.trim();
 
@@ -9927,18 +10002,19 @@ function simpanBayar(event) {
         tanggal: tanggal
       };
 
-      // Kosongkan form, lalu muat ulang data; pesan sukses tetap tampil
-      batalFormBayar();
-      document.getElementById('inputCalonBayar').focus();
+      // Data tetap ditampilkan (dikunci); tombol Cetak Kwitansi muncul
+      aturTampilanSetelahSimpan(true);
 
-      muatDataBayar(function() {
-        tampilkanKotakPesan(
-          'pesanFormBayar',
-          '✅ ' + (hasil.message || 'Pembayaran berhasil disimpan.') +
-            (hasil.status === 'LUNAS' ? '\nStatus: LUNAS.' : ''),
-          'success'
-        );
-      });
+      tampilkanKotakPesan(
+        'pesanFormBayar',
+        '✅ ' + (hasil.message || 'Pembayaran berhasil disimpan.') +
+          (hasil.status === 'LUNAS' ? '\nStatus: LUNAS.' : '') +
+          '\nKlik "Cetak Kwitansi" untuk mencetak, atau "Input Baru" untuk pembayaran berikutnya.',
+        'success'
+      );
+
+      // Muat ulang data di latar belakang agar sisa tagihan ikut diperbarui
+      muatDataBayar();
     })
     .withFailureHandler(function(error) {
       selesai();
