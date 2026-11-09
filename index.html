@@ -2060,7 +2060,7 @@ function tampilkanDashboard(user) {
   if (
     user &&
     user.role === 'guru' &&
-    String(user.level || '').toUpperCase() === 'BENDAHARA'
+    String(user.level || '').trim().toUpperCase() === 'BENDAHARA'
   ) {
 
     mulaiDashboardBendahara();
@@ -2207,7 +2207,7 @@ function formatRole(user) {
 
         if (
           String(user.level || '')
-            .toUpperCase() === 'BENDAHARA'
+            .trim().toUpperCase() === 'BENDAHARA'
         ) {
           return 'BENDAHARA';
         }
