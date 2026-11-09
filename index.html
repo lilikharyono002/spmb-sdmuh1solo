@@ -10169,7 +10169,7 @@ function pilihCalonBayar() {
    Total Biaya = biaya dikurangi potongan. */
 function htmlInfoTagihan(c) {
   return '<div><div class="lbl">Nama</div><div class="val">' + escapeHtml(c.nama) + '</div></div>' +
-    '<div><div class="lbl">Total Biaya</div><div class="val">' + formatRupiah(c.totalBiaya) + '</div></div>' +
+    '<div><div class="lbl">Total Biaya</div><div class="val">' + formatRupiah(c.biaya) + '</div></div>' +
     '<div><div class="lbl">Potongan</div><div class="val">' + formatRupiah(c.potongan) + '</div></div>' +
     '<div><div class="lbl">Sudah Dibayar</div><div class="val">' + formatRupiah(c.terbayar) + '</div></div>' +
     '<div><div class="lbl">Sisa Tagihan</div><div class="val">' + formatRupiah(c.sisa) + '</div></div>' +
@@ -11029,7 +11029,7 @@ function simpanPotonganForm(event) {
     'Simpan potongan berikut?\n\n' +
     'Nama: ' + c.nama + '\n' +
     'Potongan: ' + formatRupiah(jumlah) + '\n' +
-    'Total biaya setelah potongan: ' + formatRupiah(c.totalBiaya - jumlah)
+    'Sisa tagihan setelah potongan: ' + formatRupiah(c.sisa - jumlah)
   );
 
   if (!lanjut) return;
@@ -11185,7 +11185,7 @@ function tampilkanTabelBayar(daftar) {
       '<td style="' + sel + '">' + escapeHtml(c.no) + '</td>' +
       '<td style="' + sel + '"><strong>' + escapeHtml(c.nama) + '</strong></td>' +
       '<td style="' + sel + '">' + escapeHtml(c.asalTk) + '</td>' +
-      '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.totalBiaya) + '</td>' +
+      '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.biaya) + '</td>' +
       '<td style="' + sel + '" class="angka-kanan">' + (c.potongan > 0 ? '− ' + formatRupiah(c.potongan) : '-') + '</td>' +
       '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.terbayar) + '</td>' +
       '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.sisa) + '</td>' +
@@ -11619,7 +11619,7 @@ function bukaRiwayatBayar(idCalon) {
       '</div>' +
       '<div class="dialog-isi">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;">' +
-          '<span>Total Biaya: <strong>' + formatRupiah(c.totalBiaya) + '</strong></span>' +
+          '<span>Total Biaya: <strong>' + formatRupiah(c.biaya) + '</strong></span>' +
           (c.potongan > 0 ? '<span>Potongan: <strong>' + formatRupiah(c.potongan) + '</strong></span>' : '') +
           '<span>Terbayar: <strong>' + formatRupiah(c.terbayar) + '</strong></span>' +
           '<span>Sisa: <strong>' + formatRupiah(c.sisa) + '</strong></span>' +
