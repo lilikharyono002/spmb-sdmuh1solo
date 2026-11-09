@@ -1375,6 +1375,63 @@
   margin-bottom: 16px;
 }
 
+.baris-gelombang {
+  display: grid;
+  grid-template-columns: 1.3fr 1.1fr 0.8fr 1.4fr auto;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.baris-gelombang select,
+.baris-gelombang input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  background: white;
+}
+
+.baris-gelombang .hapus-gelombang {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.baris-gelombang .terbilang-kecil {
+  grid-column: 4;
+  margin-top: -6px;
+  min-height: 16px;
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+}
+
+@media (max-width: 700px) {
+  .baris-gelombang {
+    grid-template-columns: 1fr 1fr;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #cbd5e1;
+  }
+  .baris-gelombang .nominal-gelombang,
+  .baris-gelombang .terbilang-kecil { grid-column: 1 / -1; }
+}
+
+.menu-admin.menu-tiga {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 700px) {
+  .menu-admin.menu-tiga { grid-template-columns: 1fr; }
+}
+
 .angka-kanan {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1806,6 +1863,8 @@
       getPengaturanAdmin:     ['getPengaturanAdmin', []],
       getDaftarObserver:      ['getDaftarObserver', ['idGuru']],
       getHasilObservasiAdmin: ['getHasilObservasiAdmin', ['idPetugas']],
+      getPengaturanGelombang: ['getPengaturanGelombang', ['idPetugas']],
+      getDataGelombangCalon: ['getDataGelombangCalon', ['idPetugas']],
       getDataPembayaran:      ['getDataPembayaran', ['idPetugas']],
       getAsetCetak:           ['getAsetCetak',
                                ['urlQr', 'idLogoKiri', 'idLogoKanan', 'idTtdKepala']]
@@ -1817,7 +1876,10 @@
       simpanObservasi:     'simpanObservasi',
       simpanPengaturan:    'simpanPengaturan',
       generateAkunPeserta: 'generateAkunPeserta',
-      simpanPembayaran:    'simpanPembayaran'
+      simpanPembayaran:    'simpanPembayaran',
+      simpanPotongan:      'simpanPotongan',
+      simpanPengaturanGelombang: 'simpanPengaturanGelombang',
+      simpanGelombangCalon: 'simpanGelombangCalon'
     };
 
     function panggilGas_(metode, action, muatan, sukses, gagal) {
@@ -5702,6 +5764,18 @@ function kembaliDetailCalon() {
         ➕ Input Pembayaran
       </button>
 
+      <button type="button" onclick="bukaPotongan()">
+        ✂️ Potongan Pembayaran
+      </button>
+
+      <button type="button" onclick="bukaPengaturanGelombang()">
+        ⚙️ Pengaturan Gelombang
+      </button>
+
+      <button type="button" onclick="bukaGelombangCalon()">
+        🗂️ Input Gelombang Calon Siswa
+      </button>
+
       <button type="button" onclick="bukaBayarData()">
         📋 Data Pembayaran Daftar Ulang
       </button>
@@ -5765,6 +5839,7 @@ function kembaliDetailCalon() {
               autocomplete="off"
               maxlength="17"
               placeholder="Contoh: 500.000"
+              data-terbilang="terbilangBayar"
               oninput="formatInputJumlahBayar(this)"
               style="flex:1; min-width:180px; font-size:18px; font-weight:600; letter-spacing:0.5px;"
             >
@@ -5848,6 +5923,275 @@ function kembaliDetailCalon() {
 
 
 <!-- =================================================
+     BENDAHARA: POTONGAN PEMBAYARAN
+================================================== -->
+
+<div id="halamanPotongan" style="display:none; min-height:100vh; background:#f1f5f9;">
+
+  <div class="admin-container">
+
+    <div class="admin-header">
+
+      <div>
+        <h2>✂️ Potongan Pembayaran</h2>
+        <p>Potongan mengurangi Total Biaya daftar ulang</p>
+      </div>
+
+      <button type="button" onclick="kembaliKeDashboardBendahara()" class="btn-logout">
+        ← Kembali
+      </button>
+
+    </div>
+
+    <div class="welcome-card">
+
+      <form id="formPotongan" class="form-bayar" onsubmit="simpanPotonganForm(event)" novalidate>
+
+        <div class="form-group">
+          <label for="inputCalonPotongan">Calon Siswa</label>
+          <input
+            type="text"
+            id="inputCalonPotongan"
+            list="daftarCalonPotongan"
+            placeholder="Ketik nomor atau nama, lalu pilih dari daftar"
+            autocomplete="off"
+            oninput="pilihCalonPotongan()"
+          >
+          <datalist id="daftarCalonPotongan"></datalist>
+        </div>
+
+        <div id="infoTagihanPotongan" class="info-tagihan" style="display:none;"></div>
+
+        <div class="form-group">
+          <label for="inputJumlahPotongan">Jumlah Potongan (Rp)</label>
+          <input
+            type="text"
+            id="inputJumlahPotongan"
+            inputmode="numeric"
+            autocomplete="off"
+            maxlength="17"
+            placeholder="Contoh: 500.000"
+            data-terbilang="terbilangPotongan"
+            oninput="formatInputJumlahBayar(this)"
+            style="font-size:18px; font-weight:600; letter-spacing:0.5px;"
+          >
+          <div
+            id="terbilangPotongan"
+            style="margin-top:6px; min-height:18px; font-size:13px; color:#475569; font-style:italic;"
+          ></div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputKeteranganPotongan">Keterangan (opsional)</label>
+          <input
+            type="text"
+            id="inputKeteranganPotongan"
+            maxlength="200"
+            placeholder="Contoh: Beasiswa / anak guru"
+            autocomplete="off"
+          >
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+          <button
+            type="submit"
+            id="btnSimpanPotongan"
+            style="padding:13px 24px; border:none; border-radius:10px; background:#16a34a; color:white; font-weight:bold; font-size:15px; cursor:pointer;"
+          >
+            💾 Simpan
+          </button>
+
+          <button
+            type="button"
+            onclick="batalFormPotongan()"
+            style="padding:13px 20px; border:none; border-radius:10px; background:#e5e7eb; color:#1f2937; font-weight:bold; font-size:15px; cursor:pointer;"
+          >
+            Batal
+          </button>
+
+        </div>
+
+        <div
+          id="pesanFormPotongan"
+          role="status"
+          aria-live="polite"
+          style="display:none; margin-top:16px; padding:12px; border-radius:9px; font-size:14px; line-height:1.5;"
+        ></div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =================================================
+     BENDAHARA: PENGATURAN GELOMBANG
+================================================== -->
+
+<div id="halamanGelombangSetting" style="display:none; min-height:100vh; background:#f1f5f9;">
+
+  <div class="admin-container">
+
+    <div class="admin-header">
+
+      <div>
+        <h2>⚙️ Pengaturan Gelombang</h2>
+        <p>Atur periode dan nominal daftar ulang tiap gelombang</p>
+      </div>
+
+      <button type="button" onclick="kembaliKeDashboardBendahara()" class="btn-logout">
+        ← Kembali
+      </button>
+
+    </div>
+
+    <div class="welcome-card">
+
+      <div id="barisGelombang" class="baris-gelombang-wadah"></div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+
+        <button
+          type="button"
+          id="btnTambahGelombang"
+          onclick="tambahBarisGelombang()"
+          style="padding:12px 18px; border:none; border-radius:10px; background:#e0f2fe; color:#075985; font-weight:bold; font-size:15px; cursor:pointer;"
+        >
+          + Gelombang
+        </button>
+
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:22px;">
+
+        <button
+          type="button"
+          id="btnSimpanGelombang"
+          onclick="simpanPengaturanGelombangForm()"
+          style="padding:13px 24px; border:none; border-radius:10px; background:#16a34a; color:white; font-weight:bold; font-size:15px; cursor:pointer;"
+        >
+          💾 Simpan
+        </button>
+
+        <button
+          type="button"
+          onclick="muatPengaturanGelombang()"
+          style="padding:13px 20px; border:none; border-radius:10px; background:#e5e7eb; color:#1f2937; font-weight:bold; font-size:15px; cursor:pointer;"
+        >
+          Batal
+        </button>
+
+      </div>
+
+      <div
+        id="pesanGelombang"
+        role="status"
+        aria-live="polite"
+        style="display:none; margin-top:16px; padding:12px; border-radius:9px; font-size:14px; line-height:1.5;"
+      ></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =================================================
+     BENDAHARA: INPUT GELOMBANG CALON SISWA
+================================================== -->
+
+<div id="halamanGelombangCalon" style="display:none; min-height:100vh; background:#f1f5f9;">
+
+  <div class="admin-container">
+
+    <div class="admin-header">
+
+      <div>
+        <h2>🗂️ Input Gelombang Calon Siswa</h2>
+        <p id="ringkasGelombangCalon">Memuat data...</p>
+      </div>
+
+      <button type="button" onclick="kembaliKeDashboardBendahara()" class="btn-logout">
+        ← Kembali
+      </button>
+
+    </div>
+
+    <div class="welcome-card">
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+
+        <input
+          type="text"
+          id="pencarianGelombangCalon"
+          placeholder="Cari nomor, nama, atau asal TK..."
+          autocomplete="off"
+          style="flex:1; min-width:240px;"
+          oninput="tampilkanTabelGelombangCalon()"
+        >
+
+        <button
+          type="button"
+          id="btnSimpanGelombangCalon"
+          onclick="simpanGelombangCalonForm()"
+          style="padding:12px 22px; border:none; border-radius:10px; background:#16a34a; color:white; cursor:pointer; font-weight:bold;"
+        >
+          💾 Simpan
+        </button>
+
+      </div>
+
+      <div
+        id="pesanGelombangCalon"
+        role="status"
+        aria-live="polite"
+        style="display:none; margin-top:14px; padding:12px; border-radius:9px; font-size:14px; line-height:1.5;"
+      ></div>
+
+    </div>
+
+    <div class="welcome-card">
+
+      <div style="overflow-x:auto;">
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px; min-width:820px;">
+
+          <thead>
+            <tr style="background:#eff6ff; color:#1e3a8a;">
+              <th style="padding:12px; text-align:left;">Nomor</th>
+              <th style="padding:12px; text-align:left;">No. Pendaftaran</th>
+              <th style="padding:12px; text-align:left;">Nama Calon Siswa</th>
+              <th style="padding:12px; text-align:left;">Asal TK</th>
+              <th style="padding:12px; text-align:left;">Gelombang</th>
+              <th style="padding:12px; text-align:right;">Nominal yang Harus Dibayar</th>
+            </tr>
+          </thead>
+
+          <tbody id="bodyGelombangCalon">
+            <tr>
+              <td colspan="6" style="padding:20px; text-align:center;">
+                ⏳ Memuat data...
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- =================================================
      BENDAHARA: DATA PEMBAYARAN
 ================================================== -->
 
@@ -5862,7 +6206,7 @@ function kembaliDetailCalon() {
         <p id="ringkasDataBayar">Memuat data...</p>
       </div>
 
-      <button type="button" onclick="kembaliKeDashboardBendahara()" class="btn-logout">
+      <button type="button" onclick="kembaliDariBayarData()" class="btn-logout">
         ← Kembali
       </button>
 
@@ -5908,13 +6252,15 @@ function kembaliDetailCalon() {
 
       <div style="overflow-x:auto;">
 
-        <table style="width:100%; border-collapse:collapse; font-size:14px; min-width:820px;">
+        <table style="width:100%; border-collapse:collapse; font-size:14px; min-width:1020px;">
 
           <thead>
             <tr style="background:#eff6ff; color:#1e3a8a;">
               <th style="padding:12px; text-align:left;">No</th>
               <th style="padding:12px; text-align:left;">Nama</th>
               <th style="padding:12px; text-align:left;">Asal TK</th>
+              <th style="padding:12px; text-align:right;">Total Biaya</th>
+              <th style="padding:12px; text-align:right;">Potongan</th>
               <th style="padding:12px; text-align:right;">Terbayar</th>
               <th style="padding:12px; text-align:right;">Sisa</th>
               <th style="padding:12px; text-align:left;">Status</th>
@@ -5925,7 +6271,7 @@ function kembaliDetailCalon() {
 
           <tbody id="bodyDataBayar">
             <tr>
-              <td colspan="8" style="padding:20px; text-align:center;">
+              <td colspan="10" style="padding:20px; text-align:center;">
                 ⏳ Memuat data pembayaran...
               </td>
             </tr>
@@ -6283,6 +6629,14 @@ function kembaliDetailCalon() {
         onclick="bukaHalamanHasilAdmin()"
       >
         📊 Hasil Observasi
+      </button>
+
+
+      <button
+        type="button"
+        onclick="bukaBayarDataAdmin()"
+      >
+        💰 Data Pembayaran Daftar Ulang
       </button>
 
 
@@ -9520,6 +9874,9 @@ function tampilkanHasilAdmin(daftar) {
 const HALAMAN_BENDAHARA = [
   'dashboardBendahara',
   'halamanBayarInput',
+  'halamanPotongan',
+  'halamanGelombangSetting',
+  'halamanGelombangCalon',
   'halamanBayarData'
 ];
 
@@ -9529,6 +9886,8 @@ window.bendaharaState = {
   petaOpsi: {},     // teks pilihan -> idCalon
   terakhir: null,   // pembayaran terakhir yang disimpan (untuk kwitansi)
   terpilih: null,   // objek calon yang dipilih di form
+  terpilihPotongan: null, // calon yang dipilih di form potongan
+  dariAdmin: false, // halaman data dibuka dari dashboard admin
   memuat: false,
   menyimpan: false
 };
@@ -9597,6 +9956,11 @@ function resetDashboardBendahara() {
   st.data = [];
   st.petaOpsi = {};
   st.terpilih = null;
+  st.terpilihPotongan = null;
+  st.dariAdmin = false;
+  st.tanpaGelombang = 0;
+  window.gelombangState = { daftar: [], pilihan: [], memuat: false, menyimpan: false };
+  window.gelombangCalon = { gelombang: [], data: [], asli: {}, ubah: {}, memuat: false, menyimpan: false };
   st.terakhir = null;
   st.memuat = false;
   st.menyimpan = false;
@@ -9608,12 +9972,19 @@ function resetDashboardBendahara() {
 
   tampilkanKotakPesan('pesanBendahara', '', '');
   tampilkanKotakPesan('pesanFormBayar', '', '');
+  tampilkanKotakPesan('pesanFormPotongan', '', '');
 
   const form = document.getElementById('formBayar');
   if (form) form.reset();
 
+  const formPot = document.getElementById('formPotongan');
+  if (formPot) formPot.reset();
+
   const info = document.getElementById('infoTagihanBayar');
   if (info) info.style.display = 'none';
+
+  const infoPot = document.getElementById('infoTagihanPotongan');
+  if (infoPot) infoPot.style.display = 'none';
 
   ['statBayarBelumLunas', 'statBayarLunas', 'statBayarBelum']
     .forEach(function(id) {
@@ -9645,7 +10016,7 @@ function muatDataBayar(sesudahnya) {
   const tbody = document.getElementById('bodyDataBayar');
   if (tbody && !st.data.length) {
     tbody.innerHTML =
-      '<tr><td colspan="8" style="padding:20px;text-align:center;">' +
+      '<tr><td colspan="10" style="padding:20px;text-align:center;">' +
       '⏳ Memuat data pembayaran...</td></tr>';
   }
 
@@ -9662,7 +10033,7 @@ function muatDataBayar(sesudahnya) {
 
         if (tbody) {
           tbody.innerHTML =
-            '<tr><td colspan="8" style="padding:20px;text-align:center;color:#b91c1c;">' +
+            '<tr><td colspan="10" style="padding:20px;text-align:center;color:#b91c1c;">' +
             '❌ ' + escapeHtml(pesan) + '</td></tr>';
         }
         return;
@@ -9671,6 +10042,7 @@ function muatDataBayar(sesudahnya) {
       tampilkanKotakPesan('pesanBendahara', '', '');
 
       st.biaya = Number(hasil.biaya) || 0;
+      st.tanpaGelombang = Number(hasil.tanpaGelombang) || 0;
       st.data = Array.isArray(hasil.data) ? hasil.data : [];
 
       perbaruiAngkaBendahara();
@@ -9684,6 +10056,14 @@ function muatDataBayar(sesudahnya) {
         });
         st.terpilih = baru || null;
         tampilkanInfoTagihanBayar();
+      }
+
+      if (st.terpilihPotongan) {
+        const baruPot = st.data.find(function(c) {
+          return c.idCalon === st.terpilihPotongan.idCalon;
+        });
+        st.terpilihPotongan = baruPot || null;
+        tampilkanInfoTagihanPotongan();
       }
 
       if (typeof sesudahnya === 'function') sesudahnya();
@@ -9727,8 +10107,11 @@ function perbaruiAngkaBendahara() {
   const ringkas = document.getElementById('ringkasBendahara');
   if (ringkas) {
     ringkas.textContent =
-      'Dari ' + st.data.length + ' calon yang diterima • Biaya daftar ulang ' +
-      formatRupiah(st.biaya) + ' per siswa • Terkumpul ' + formatRupiah(terkumpul);
+      'Dari ' + st.data.length + ' calon yang diterima dan sudah diberi gelombang • Terkumpul ' +
+      formatRupiah(terkumpul) +
+      (st.tanpaGelombang > 0
+        ? ' • ' + st.tanpaGelombang + ' calon diterima belum diberi gelombang'
+        : '');
   }
 }
 
@@ -9750,12 +10133,12 @@ function teksOpsiCalon(c) {
 function perbaruiDaftarCalonBayar() {
   const st = window.bendaharaState;
   const dl = document.getElementById('daftarCalonBayar');
-  if (!dl) return;
+  const dlPot = document.getElementById('daftarCalonPotongan');
 
   st.petaOpsi = {};
 
   // Calon yang sudah lunas tidak perlu diinput lagi
-  dl.innerHTML = st.data
+  const opsi = st.data
     .filter(function(c) { return c.status !== 'LUNAS'; })
     .map(function(c) {
       const teks = teksOpsiCalon(c);
@@ -9763,6 +10146,9 @@ function perbaruiDaftarCalonBayar() {
       return '<option value="' + escapeHtml(teks) + '"></option>';
     })
     .join('');
+
+  if (dl) dl.innerHTML = opsi;
+  if (dlPot) dlPot.innerHTML = opsi;
 }
 
 
@@ -9776,6 +10162,18 @@ function pilihCalonBayar() {
     : null;
 
   tampilkanInfoTagihanBayar();
+}
+
+
+/* Kotak info tagihan (dipakai form pembayaran & potongan).
+   Total Biaya = biaya dikurangi potongan. */
+function htmlInfoTagihan(c) {
+  return '<div><div class="lbl">Nama</div><div class="val">' + escapeHtml(c.nama) + '</div></div>' +
+    '<div><div class="lbl">Total Biaya</div><div class="val">' + formatRupiah(c.totalBiaya) + '</div></div>' +
+    '<div><div class="lbl">Potongan</div><div class="val">' + formatRupiah(c.potongan) + '</div></div>' +
+    '<div><div class="lbl">Sudah Dibayar</div><div class="val">' + formatRupiah(c.terbayar) + '</div></div>' +
+    '<div><div class="lbl">Sisa Tagihan</div><div class="val">' + formatRupiah(c.sisa) + '</div></div>' +
+    '<div><div class="lbl">Status</div><div class="val">' + badgeStatusBayar(c.status) + '</div></div>';
 }
 
 
@@ -9795,12 +10193,7 @@ function tampilkanInfoTagihanBayar() {
   }
 
   info.style.display = 'grid';
-  info.innerHTML =
-    '<div><div class="lbl">Nama</div><div class="val">' + escapeHtml(c.nama) + '</div></div>' +
-    '<div><div class="lbl">Total Biaya</div><div class="val">' + formatRupiah(c.biaya) + '</div></div>' +
-    '<div><div class="lbl">Sudah Dibayar</div><div class="val">' + formatRupiah(c.terbayar) + '</div></div>' +
-    '<div><div class="lbl">Sisa Tagihan</div><div class="val">' + formatRupiah(c.sisa) + '</div></div>' +
-    '<div><div class="lbl">Status</div><div class="val">' + badgeStatusBayar(c.status) + '</div></div>';
+  info.innerHTML = htmlInfoTagihan(c);
 
   if (btnSisa) btnSisa.style.display = c.sisa > 0 ? 'inline-block' : 'none';
 }
@@ -9831,7 +10224,12 @@ function formatInputJumlahBayar(el) {
 
   try { el.setSelectionRange(baru, baru); } catch (e) {}
 
-  perbaruiTerbilangBayar();
+  // Tulisan nominal di bawah kolom (id target ada di data-terbilang)
+  const target = document.getElementById(el.dataset.terbilang || 'terbilangBayar');
+  if (target) {
+    const jumlah = digit === '' ? 0 : Number(digit);
+    target.textContent = jumlah > 0 ? terbilangRupiah(jumlah) : '';
+  }
 }
 
 
@@ -10038,6 +10436,692 @@ function simpanBayar(event) {
 }
 
 
+/* =====================================================
+   GELOMBANG: PENGATURAN & INPUT GELOMBANG CALON
+===================================================== */
+
+const NAMA_GELOMBANG = ['INDEN', 'Gelombang 1', 'Gelombang 2', 'Gelombang 3'];
+
+const NAMA_BULAN = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+window.gelombangState = { daftar: [], pilihan: [], memuat: false, menyimpan: false };
+window.gelombangCalon = { gelombang: [], data: [], asli: {}, ubah: {}, memuat: false, menyimpan: false };
+
+
+/* ---------- PENGATURAN GELOMBANG ---------- */
+
+function bukaPengaturanGelombang() {
+  tampilkanHalamanBendahara('halamanGelombangSetting');
+  tampilkanKotakPesan('pesanGelombang', '', '');
+  muatPengaturanGelombang();
+}
+
+
+function muatPengaturanGelombang() {
+  const gs = window.gelombangState;
+  if (!window.userLogin || gs.memuat) return;
+
+  gs.memuat = true;
+  tampilkanKotakPesan('pesanGelombang', '⏳ Memuat pengaturan...', 'info');
+
+  google.script.run
+    .withSuccessHandler(function(hasil) {
+      gs.memuat = false;
+
+      if (!hasil || !hasil.success) {
+        tampilkanKotakPesan(
+          'pesanGelombang',
+          hasil && hasil.message ? hasil.message : 'Pengaturan gelombang tidak dapat dibaca.',
+          'error'
+        );
+        return;
+      }
+
+      tampilkanKotakPesan('pesanGelombang', '', '');
+
+      gs.daftar = (hasil.daftar || []).map(function(g) {
+        return {
+          nama: g.nama,
+          bulan: Number(g.bulan) || 0,
+          tahun: Number(g.tahun) || 0,
+          nominal: Number(g.nominal) || 0
+        };
+      });
+
+      if (!gs.daftar.length) {
+        gs.daftar.push(barisGelombangBaru());
+      }
+
+      gambarBarisGelombang();
+    })
+    .withFailureHandler(function(error) {
+      gs.memuat = false;
+      tampilkanKotakPesan(
+        'pesanGelombang',
+        'Gagal memuat pengaturan gelombang. ' +
+          (error && error.message ? error.message : ''),
+        'error'
+      );
+    })
+    .getPengaturanGelombang(window.userLogin.id);
+}
+
+
+/* Baris baru: nama pertama yang belum dipakai, bulan & tahun saat ini */
+function barisGelombangBaru() {
+  const gs = window.gelombangState;
+  const dipakai = gs.daftar.map(function(g) { return g.nama; });
+  const nama = NAMA_GELOMBANG.find(function(n) { return dipakai.indexOf(n) === -1; }) || '';
+  const sekarang = new Date();
+
+  return {
+    nama: nama,
+    bulan: sekarang.getMonth() + 1,
+    tahun: sekarang.getFullYear(),
+    nominal: 0
+  };
+}
+
+
+function tambahBarisGelombang() {
+  const gs = window.gelombangState;
+
+  if (gs.daftar.length >= NAMA_GELOMBANG.length) return;
+
+  gs.daftar.push(barisGelombangBaru());
+  gambarBarisGelombang();
+}
+
+
+function hapusBarisGelombang(i) {
+  const gs = window.gelombangState;
+
+  gs.daftar.splice(i, 1);
+
+  if (!gs.daftar.length) gs.daftar.push(barisGelombangBaru());
+
+  gambarBarisGelombang();
+}
+
+
+function gambarBarisGelombang() {
+  const gs = window.gelombangState;
+  const wadah = document.getElementById('barisGelombang');
+  if (!wadah) return;
+
+  const tahunIni = new Date().getFullYear();
+
+  wadah.innerHTML = gs.daftar.map(function(g, i) {
+    const dipakaiLain = gs.daftar
+      .filter(function(x, j) { return j !== i; })
+      .map(function(x) { return x.nama; });
+
+    const opsiNama = NAMA_GELOMBANG
+      .filter(function(n) { return dipakaiLain.indexOf(n) === -1; })
+      .map(function(n) {
+        return '<option value="' + escapeHtml(n) + '"' +
+          (n === g.nama ? ' selected' : '') + '>' + escapeHtml(n) + '</option>';
+      }).join('');
+
+    const opsiBulan = '<option value="0">Bulan</option>' +
+      NAMA_BULAN.map(function(b, k) {
+        return '<option value="' + (k + 1) + '"' +
+          (g.bulan === k + 1 ? ' selected' : '') + '>' + b + '</option>';
+      }).join('');
+
+    let awal = tahunIni - 1;
+    let akhir = tahunIni + 5;
+    if (g.tahun && g.tahun < awal) awal = g.tahun;
+    if (g.tahun && g.tahun > akhir) akhir = g.tahun;
+
+    let opsiTahun = '<option value="0">Tahun</option>';
+    for (let t = awal; t <= akhir; t++) {
+      opsiTahun += '<option value="' + t + '"' +
+        (g.tahun === t ? ' selected' : '') + '>' + t + '</option>';
+    }
+
+    return '<div class="baris-gelombang" data-i="' + i + '">' +
+      '<select aria-label="Gelombang" onchange="ubahBarisGelombang(' + i + ',\'nama\',this.value,true)">' + opsiNama + '</select>' +
+      '<select aria-label="Bulan" onchange="ubahBarisGelombang(' + i + ',\'bulan\',this.value)">' + opsiBulan + '</select>' +
+      '<select aria-label="Tahun" onchange="ubahBarisGelombang(' + i + ',\'tahun\',this.value)">' + opsiTahun + '</select>' +
+      '<input class="nominal-gelombang" type="text" inputmode="numeric" autocomplete="off" maxlength="17" ' +
+        'placeholder="Nominal daftar ulang, mis. 14.450.000" aria-label="Nominal" ' +
+        'value="' + (g.nominal > 0 ? pisahRibuan(g.nominal) : '') + '" ' +
+        'oninput="ubahNominalGelombang(' + i + ',this)">' +
+      '<button type="button" class="hapus-gelombang" aria-label="Hapus baris" onclick="hapusBarisGelombang(' + i + ')">✕</button>' +
+      '<div class="terbilang-kecil" id="terbilangGelombang' + i + '">' +
+        (g.nominal > 0 ? escapeHtml(terbilangRupiah(g.nominal)) : '') + '</div>' +
+    '</div>';
+  }).join('');
+
+  const tambah = document.getElementById('btnTambahGelombang');
+  if (tambah) tambah.disabled = gs.daftar.length >= NAMA_GELOMBANG.length;
+}
+
+
+function ubahBarisGelombang(i, kolom, nilai, gambarUlang) {
+  const g = window.gelombangState.daftar[i];
+  if (!g) return;
+
+  g[kolom] = kolom === 'nama' ? nilai : Number(nilai);
+
+  // Pilihan nama memengaruhi daftar pilihan baris lain
+  if (gambarUlang) gambarBarisGelombang();
+}
+
+
+function ubahNominalGelombang(i, el) {
+  const g = window.gelombangState.daftar[i];
+  if (!g) return;
+
+  el.dataset.terbilang = 'terbilangGelombang' + i;
+  formatInputJumlahBayar(el);
+
+  const digit = el.value.replace(/\D/g, '');
+  g.nominal = digit === '' ? 0 : Number(digit);
+}
+
+
+function simpanPengaturanGelombangForm() {
+  const gs = window.gelombangState;
+
+  if (gs.menyimpan) return;
+
+  if (!window.userLogin || window.userLogin.role !== 'guru') {
+    tampilkanKotakPesan('pesanGelombang', 'Sesi tidak ditemukan. Silakan login kembali.', 'error');
+    return;
+  }
+
+  for (let i = 0; i < gs.daftar.length; i++) {
+    const g = gs.daftar[i];
+
+    if (!g.nama) {
+      tampilkanKotakPesan('pesanGelombang', 'Baris ' + (i + 1) + ': pilih gelombang.', 'error');
+      return;
+    }
+    if (!(g.bulan >= 1 && g.bulan <= 12) || !g.tahun) {
+      tampilkanKotakPesan('pesanGelombang', g.nama + ': pilih bulan dan tahun.', 'error');
+      return;
+    }
+    if (!(g.nominal > 0)) {
+      tampilkanKotakPesan('pesanGelombang', g.nama + ': isi nominal pembayaran daftar ulang.', 'error');
+      return;
+    }
+  }
+
+  const tombol = document.getElementById('btnSimpanGelombang');
+
+  gs.menyimpan = true;
+  if (tombol) { tombol.disabled = true; tombol.textContent = 'Menyimpan...'; }
+
+  tampilkanKotakPesan('pesanGelombang', 'Menyimpan pengaturan...', 'info');
+
+  function selesai() {
+    gs.menyimpan = false;
+    if (tombol) { tombol.disabled = false; tombol.textContent = '💾 Simpan'; }
+  }
+
+  google.script.run
+    .withSuccessHandler(function(hasil) {
+      selesai();
+
+      if (!hasil || !hasil.success) {
+        tampilkanKotakPesan(
+          'pesanGelombang',
+          hasil && hasil.message ? hasil.message : 'Pengaturan gagal disimpan.',
+          'error'
+        );
+        return;
+      }
+
+      tampilkanKotakPesan(
+        'pesanGelombang',
+        '✅ ' + (hasil.message || 'Pengaturan gelombang tersimpan.'),
+        'success'
+      );
+
+      muatDataBayar();
+    })
+    .withFailureHandler(function(error) {
+      selesai();
+      tampilkanKotakPesan(
+        'pesanGelombang',
+        'Terjadi kesalahan saat menyimpan. ' + (error && error.message ? error.message : ''),
+        'error'
+      );
+    })
+    .simpanPengaturanGelombang({
+      idPetugas: window.userLogin.id,
+      daftar: gs.daftar.map(function(g) {
+        return { nama: g.nama, bulan: g.bulan, tahun: g.tahun, nominal: g.nominal };
+      })
+    });
+}
+
+
+/* ---------- INPUT GELOMBANG CALON SISWA ---------- */
+
+function bukaGelombangCalon() {
+  tampilkanHalamanBendahara('halamanGelombangCalon');
+  const cari = document.getElementById('pencarianGelombangCalon');
+  if (cari) cari.value = '';
+  tampilkanKotakPesan('pesanGelombangCalon', '', '');
+  muatGelombangCalon();
+}
+
+
+function muatGelombangCalon(pesanSesudah) {
+  const gc = window.gelombangCalon;
+  if (!window.userLogin || gc.memuat) return;
+
+  gc.memuat = true;
+
+  google.script.run
+    .withSuccessHandler(function(hasil) {
+      gc.memuat = false;
+
+      if (!hasil || !hasil.success) {
+        tampilkanKotakPesan(
+          'pesanGelombangCalon',
+          hasil && hasil.message ? hasil.message : 'Data tidak dapat dibaca.',
+          'error'
+        );
+        return;
+      }
+
+      gc.gelombang = hasil.gelombang || [];
+      gc.data = hasil.data || [];
+      gc.asli = {};
+      gc.ubah = {};
+
+      gc.data.forEach(function(c) { gc.asli[c.idCalon] = c.gelombang || ''; });
+
+      if (pesanSesudah) {
+        tampilkanKotakPesan('pesanGelombangCalon', pesanSesudah, 'success');
+      } else if (!gc.gelombang.length) {
+        tampilkanKotakPesan(
+          'pesanGelombangCalon',
+          'Gelombang belum diatur. Buka "Pengaturan Gelombang" terlebih dahulu.',
+          'error'
+        );
+      } else {
+        tampilkanKotakPesan('pesanGelombangCalon', '', '');
+      }
+
+      tampilkanTabelGelombangCalon();
+    })
+    .withFailureHandler(function(error) {
+      gc.memuat = false;
+      tampilkanKotakPesan(
+        'pesanGelombangCalon',
+        'Gagal memuat data. ' + (error && error.message ? error.message : ''),
+        'error'
+      );
+    })
+    .getDataGelombangCalon(window.userLogin.id);
+}
+
+
+function gelombangTerpilih(c) {
+  const gc = window.gelombangCalon;
+  return Object.prototype.hasOwnProperty.call(gc.ubah, c.idCalon)
+    ? gc.ubah[c.idCalon]
+    : (gc.asli[c.idCalon] || '');
+}
+
+
+function nominalGelombang(nama) {
+  const g = window.gelombangCalon.gelombang.find(function(x) { return x.nama === nama; });
+  return g ? g.nominal : 0;
+}
+
+
+function tampilkanTabelGelombangCalon() {
+  const gc = window.gelombangCalon;
+  const tbody = document.getElementById('bodyGelombangCalon');
+  if (!tbody) return;
+
+  const kata = (document.getElementById('pencarianGelombangCalon') || { value: '' })
+    .value.trim().toLowerCase();
+
+  const ringkas = document.getElementById('ringkasGelombangCalon');
+  if (ringkas) {
+    ringkas.textContent = gc.data.length + ' calon yang diterima • ' +
+      Object.keys(gc.ubah).length + ' perubahan belum disimpan';
+  }
+
+  if (!gc.data.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="padding:20px;text-align:center;">' +
+      'Belum ada calon yang berstatus DITERIMA.</td></tr>';
+    return;
+  }
+
+  const sel = 'padding:10px 12px;border-bottom:1px solid #e5e7eb;';
+  let nomor = 0;
+
+  const baris = gc.data.map(function(c) {
+    nomor++;
+
+    if (kata && !(
+      String(c.no).toLowerCase().includes(kata) ||
+      String(c.nama).toLowerCase().includes(kata) ||
+      String(c.asalTk).toLowerCase().includes(kata)
+    )) return '';
+
+    const pilih = gelombangTerpilih(c);
+
+    const opsi = '<option value="">— Pilih —</option>' +
+      gc.gelombang.map(function(g) {
+        return '<option value="' + escapeHtml(g.nama) + '"' +
+          (g.nama === pilih ? ' selected' : '') + '>' + escapeHtml(g.nama) + '</option>';
+      }).join('');
+
+    const nominal = pilih ? nominalGelombang(pilih) : 0;
+
+    return '<tr>' +
+      '<td style="' + sel + '">' + nomor + '</td>' +
+      '<td style="' + sel + '">' + escapeHtml(c.no) + '</td>' +
+      '<td style="' + sel + '"><strong>' + escapeHtml(c.nama) + '</strong></td>' +
+      '<td style="' + sel + '">' + escapeHtml(c.asalTk) + '</td>' +
+      '<td style="' + sel + '">' +
+        '<select style="padding:9px 10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:14px;" ' +
+        'onchange="pilihGelombangCalon(\'' + escapeHtml(c.idCalon) + '\',this.value)">' + opsi + '</select></td>' +
+      '<td style="' + sel + '" class="angka-kanan" id="nominalGel_' + escapeHtml(c.idCalon) + '">' +
+        (pilih ? formatRupiah(nominal) : '-') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  tbody.innerHTML = baris ||
+    '<tr><td colspan="6" style="padding:20px;text-align:center;">Tidak ada data yang sesuai.</td></tr>';
+}
+
+
+function pilihGelombangCalon(idCalon, nilai) {
+  const gc = window.gelombangCalon;
+
+  if ((gc.asli[idCalon] || '') === nilai) delete gc.ubah[idCalon];
+  else gc.ubah[idCalon] = nilai;
+
+  const el = document.getElementById('nominalGel_' + idCalon);
+  if (el) el.textContent = nilai ? formatRupiah(nominalGelombang(nilai)) : '-';
+
+  const ringkas = document.getElementById('ringkasGelombangCalon');
+  if (ringkas) {
+    ringkas.textContent = gc.data.length + ' calon yang diterima • ' +
+      Object.keys(gc.ubah).length + ' perubahan belum disimpan';
+  }
+}
+
+
+function simpanGelombangCalonForm() {
+  const gc = window.gelombangCalon;
+
+  if (gc.menyimpan) return;
+
+  if (!window.userLogin || window.userLogin.role !== 'guru') {
+    tampilkanKotakPesan('pesanGelombangCalon', 'Sesi tidak ditemukan. Silakan login kembali.', 'error');
+    return;
+  }
+
+  const perubahan = Object.keys(gc.ubah).map(function(id) {
+    return { idCalon: id, gelombang: gc.ubah[id] };
+  });
+
+  if (!perubahan.length) {
+    tampilkanKotakPesan('pesanGelombangCalon', 'Belum ada perubahan untuk disimpan.', 'info');
+    return;
+  }
+
+  const tombol = document.getElementById('btnSimpanGelombangCalon');
+
+  gc.menyimpan = true;
+  if (tombol) { tombol.disabled = true; tombol.textContent = 'Menyimpan...'; }
+
+  tampilkanKotakPesan('pesanGelombangCalon', 'Menyimpan ' + perubahan.length + ' perubahan...', 'info');
+
+  function selesai() {
+    gc.menyimpan = false;
+    if (tombol) { tombol.disabled = false; tombol.textContent = '💾 Simpan'; }
+  }
+
+  google.script.run
+    .withSuccessHandler(function(hasil) {
+      selesai();
+
+      if (!hasil || !hasil.success) {
+        tampilkanKotakPesan(
+          'pesanGelombangCalon',
+          hasil && hasil.message ? hasil.message : 'Gelombang gagal disimpan.',
+          'error'
+        );
+        return;
+      }
+
+      muatGelombangCalon('✅ ' + (hasil.message || 'Gelombang tersimpan.'));
+      muatDataBayar();
+    })
+    .withFailureHandler(function(error) {
+      selesai();
+      tampilkanKotakPesan(
+        'pesanGelombangCalon',
+        'Terjadi kesalahan saat menyimpan. ' + (error && error.message ? error.message : ''),
+        'error'
+      );
+    })
+    .simpanGelombangCalon({
+      idPetugas: window.userLogin.id,
+      perubahan: perubahan
+    });
+}
+
+
+/* ---------- POTONGAN PEMBAYARAN ---------- */
+
+function bukaPotongan() {
+  tampilkanHalamanBendahara('halamanPotongan');
+  batalFormPotongan();
+  perbaruiDaftarCalonBayar();
+}
+
+
+function pilihCalonPotongan() {
+  const st = window.bendaharaState;
+  const input = document.getElementById('inputCalonPotongan');
+  const id = input ? st.petaOpsi[input.value.trim()] : null;
+
+  st.terpilihPotongan = id
+    ? st.data.find(function(c) { return c.idCalon === id; }) || null
+    : null;
+
+  tampilkanInfoTagihanPotongan();
+}
+
+
+function tampilkanInfoTagihanPotongan() {
+  const info = document.getElementById('infoTagihanPotongan');
+  if (!info) return;
+
+  const c = window.bendaharaState.terpilihPotongan;
+
+  if (!c) {
+    info.style.display = 'none';
+    info.innerHTML = '';
+    return;
+  }
+
+  info.style.display = 'grid';
+  info.innerHTML = htmlInfoTagihan(c);
+}
+
+
+function batalFormPotongan(tetapkanPesan) {
+  const st = window.bendaharaState;
+
+  const form = document.getElementById('formPotongan');
+  if (form) form.reset();
+
+  st.terpilihPotongan = null;
+  tampilkanInfoTagihanPotongan();
+
+  const t = document.getElementById('terbilangPotongan');
+  if (t) t.textContent = '';
+
+  if (tetapkanPesan !== true) tampilkanKotakPesan('pesanFormPotongan', '', '');
+}
+
+
+function simpanPotonganForm(event) {
+  event.preventDefault();
+
+  const st = window.bendaharaState;
+
+  if (st.menyimpan) return;
+
+  if (!window.userLogin || window.userLogin.role !== 'guru') {
+    tampilkanKotakPesan(
+      'pesanFormPotongan',
+      'Sesi tidak ditemukan. Silakan login kembali.',
+      'error'
+    );
+    return;
+  }
+
+  const c = st.terpilihPotongan;
+
+  if (!c) {
+    tampilkanKotakPesan(
+      'pesanFormPotongan',
+      'Pilih calon siswa dari daftar terlebih dahulu.',
+      'error'
+    );
+    return;
+  }
+
+  const digit = document.getElementById('inputJumlahPotongan')
+    .value.replace(/\D/g, '');
+  const jumlah = digit === '' ? 0 : Number(digit);
+  const keterangan = document.getElementById('inputKeteranganPotongan')
+    .value.trim();
+
+  if (!Number.isFinite(jumlah) || jumlah <= 0) {
+    tampilkanKotakPesan(
+      'pesanFormPotongan',
+      'Jumlah potongan harus berupa angka bulat lebih dari 0.',
+      'error'
+    );
+    return;
+  }
+
+  if (jumlah > c.sisa) {
+    tampilkanKotakPesan(
+      'pesanFormPotongan',
+      'Potongan melebihi sisa tagihan (' + formatRupiah(c.sisa) + ').',
+      'error'
+    );
+    return;
+  }
+
+  const lanjut = confirm(
+    'Simpan potongan berikut?\n\n' +
+    'Nama: ' + c.nama + '\n' +
+    'Potongan: ' + formatRupiah(jumlah) + '\n' +
+    'Total biaya setelah potongan: ' + formatRupiah(c.totalBiaya - jumlah)
+  );
+
+  if (!lanjut) return;
+
+  const tombol = document.getElementById('btnSimpanPotongan');
+
+  st.menyimpan = true;
+  if (tombol) {
+    tombol.disabled = true;
+    tombol.textContent = 'Menyimpan...';
+  }
+
+  tampilkanKotakPesan('pesanFormPotongan', 'Menyimpan potongan...', 'info');
+
+  function selesai() {
+    st.menyimpan = false;
+    if (tombol) {
+      tombol.disabled = false;
+      tombol.textContent = '💾 Simpan';
+    }
+  }
+
+  google.script.run
+    .withSuccessHandler(function(hasil) {
+      selesai();
+
+      if (!hasil || !hasil.success) {
+        tampilkanKotakPesan(
+          'pesanFormPotongan',
+          hasil && hasil.message ? hasil.message : 'Potongan gagal disimpan.',
+          'error'
+        );
+        return;
+      }
+
+      // Form dikosongkan agar siap untuk input berikutnya
+      batalFormPotongan(true);
+
+      tampilkanKotakPesan(
+        'pesanFormPotongan',
+        '✅ ' + (hasil.message || 'Potongan berhasil disimpan.'),
+        'success'
+      );
+
+      muatDataBayar();
+    })
+    .withFailureHandler(function(error) {
+      selesai();
+
+      console.error('Gagal menyimpan potongan:', error);
+
+      tampilkanKotakPesan(
+        'pesanFormPotongan',
+        'Terjadi kesalahan saat menyimpan potongan. ' +
+          (error && error.message ? error.message : ''),
+        'error'
+      );
+    })
+    .simpanPotongan({
+      idPetugas: window.userLogin.id,
+      idCalon: c.idCalon,
+      jumlah: jumlah,
+      keterangan: keterangan
+    });
+}
+
+
+/* ---------- DATA PEMBAYARAN DARI DASHBOARD ADMIN ---------- */
+
+function bukaBayarDataAdmin() {
+  const da = document.getElementById('dashboardAdmin');
+  if (da) da.style.display = 'none';
+
+  window.bendaharaState.dariAdmin = true;
+  bukaBayarData();
+}
+
+
+function kembaliDariBayarData() {
+  const st = window.bendaharaState;
+
+  if (st.dariAdmin) {
+    st.dariAdmin = false;
+    tampilkanHalamanBendahara('');   // sembunyikan semua halaman bendahara
+    bukaDashboardAdmin();
+    return;
+  }
+
+  kembaliKeDashboardBendahara();
+}
+
+
 /* ---------- DATA PEMBAYARAN (TABEL) ---------- */
 
 function bukaBayarData() {
@@ -10089,7 +11173,7 @@ function tampilkanTabelBayar(daftar) {
 
   if (!daftar.length) {
     tbody.innerHTML =
-      '<tr><td colspan="8" style="padding:20px;text-align:center;">' +
+      '<tr><td colspan="10" style="padding:20px;text-align:center;">' +
       'Tidak ada data yang sesuai.</td></tr>';
     return;
   }
@@ -10101,6 +11185,8 @@ function tampilkanTabelBayar(daftar) {
       '<td style="' + sel + '">' + escapeHtml(c.no) + '</td>' +
       '<td style="' + sel + '"><strong>' + escapeHtml(c.nama) + '</strong></td>' +
       '<td style="' + sel + '">' + escapeHtml(c.asalTk) + '</td>' +
+      '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.totalBiaya) + '</td>' +
+      '<td style="' + sel + '" class="angka-kanan">' + (c.potongan > 0 ? '− ' + formatRupiah(c.potongan) : '-') + '</td>' +
       '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.terbayar) + '</td>' +
       '<td style="' + sel + '" class="angka-kanan">' + formatRupiah(c.sisa) + '</td>' +
       '<td style="' + sel + '">' + badgeStatusBayar(c.status) + '</td>' +
@@ -10388,7 +11474,7 @@ function cetakKwitansiBayar() {
     <div class="logo">${tagLogo(aset.logoKiri, 'Logo Kiri')}</div>
 
     <div class="judul">
-      <div class="b1">Bukti Pembayaran SPMB</div>
+      <div class="b1">Kwitansi Pembayaran SPMB</div>
       <div class="b2">SD Muhammadiyah 1 Ketelan Surakarta</div>
       <div class="b3">Tahun Pelajaran 2028/2029</div>
     </div>
@@ -10508,6 +11594,16 @@ function bukaRiwayatBayar(idCalon) {
       }).join('')
     : '<tr><td colspan="4" style="padding:14px;text-align:center;color:#64748b;">Belum ada pembayaran.</td></tr>';
 
+  const daftarPot = c.riwayatPotongan || [];
+  const barisPotongan = daftarPot.length
+    ? '<div style="margin-top:14px;font-weight:700;font-size:14px;color:#1e3a8a;">Potongan</div>' +
+      '<ul style="margin:6px 0 0;padding-left:20px;font-size:14px;">' +
+      daftarPot.map(function(x) {
+        return '<li>' + formatRupiah(x.jumlah) +
+          (x.keterangan ? ' — ' + escapeHtml(x.keterangan) : '') + '</li>';
+      }).join('') + '</ul>'
+    : '';
+
   const lapisan = document.createElement('div');
   lapisan.id = 'dialogRiwayatBayar';
   lapisan.className = 'dialog-lapisan';
@@ -10523,6 +11619,8 @@ function bukaRiwayatBayar(idCalon) {
       '</div>' +
       '<div class="dialog-isi">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:14px;">' +
+          '<span>Total Biaya: <strong>' + formatRupiah(c.totalBiaya) + '</strong></span>' +
+          (c.potongan > 0 ? '<span>Potongan: <strong>' + formatRupiah(c.potongan) + '</strong></span>' : '') +
           '<span>Terbayar: <strong>' + formatRupiah(c.terbayar) + '</strong></span>' +
           '<span>Sisa: <strong>' + formatRupiah(c.sisa) + '</strong></span>' +
           badgeStatusBayar(c.status) +
@@ -10538,6 +11636,7 @@ function bukaRiwayatBayar(idCalon) {
             '<tbody>' + baris + '</tbody>' +
           '</table>' +
         '</div>' +
+        barisPotongan +
       '</div>' +
       '<div class="dialog-aksi">' +
         '<button type="button" class="dialog-btn dialog-btn-batal" onclick="tutupRiwayatBayar()">Tutup</button>' +
